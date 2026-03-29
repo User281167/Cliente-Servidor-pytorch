@@ -1,0 +1,22 @@
+import torch.nn as nn
+
+
+class Cifar10Conv(nn.Module):
+    def __init__(self, gray=True):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(1 if gray else 3, 32, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Flatten(),
+            nn.Dropout(p=0.2),
+            nn.Linear(64 * 8 * 8, 128),  # 64 filtros de 8x8
+            nn.ReLU(),
+            nn.Linear(128, 10),
+        )
+
+    def forward(self, x):
+        return self.net(x)

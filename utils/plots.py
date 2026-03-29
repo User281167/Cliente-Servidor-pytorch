@@ -63,7 +63,7 @@ def plot_grid(
 
     for idx, (col_values, label) in enumerate(zip(columns, labels)):
         ax = axs[idx]
-        ax.plot(range(1, n_epochs + 1), col_values, marker="o")
+        ax.plot(range(1, n_epochs + 1), col_values)
         ax.set_title(label)
         ax.set_xlabel("Epoch")
         ax.set_ylabel(label)
