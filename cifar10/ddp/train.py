@@ -4,13 +4,14 @@ import os
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torchinfo import summary
 
+from cifar10.model import Cifar10Model
 from evaluates import evaluate_classification
 from trainers import train_ddp_grad_avarage
 from utils import plot_confusion_matrix, plot_grid
 
 from .load_sampler import load_cifar10_sampler, plot_images
-from .model import Cifar10Conv
 
 
 def setup(rank: int, world_size: int, master_addr: str, master_port: str):
@@ -38,7 +39,9 @@ def train(
     setup(rank, world_size, master_addr, master_port)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = Cifar10Conv(gray, conv)
+    model = Cifar10Model(gray, conv)
+    summary(model, input_size=(batch_size, 1 if gray else 3, 32, 32))
+
     model = DDP(model)
 
     criterion = torch.nn.CrossEntropyLoss()

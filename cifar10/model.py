@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 
-class Cifar10Conv(nn.Module):
+class Cifar10Model(nn.Module):
     def __init__(self, gray=True, conv=False):
         super().__init__()
 

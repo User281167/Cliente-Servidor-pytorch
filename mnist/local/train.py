@@ -1,19 +1,21 @@
+import argparse
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchinfo import summary
 
 from evaluates import evaluate_classification
+from mnist.model import MnistModel
 from trainers import train_grad_average
 from utils import plot_confusion_matrix, plot_grid
 
 from .load_data import load_mnist
-from .model import MnistConv
 
 
-def main():
-    model = MnistConv()
-    summary(model, input_size=(1, 1, 28, 28))
+def train(conv=False, epochs=2, batch_size=256):
+    model = MnistModel(conv)
+    summary(model, input_size=(batch_size, 1, 28, 28))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
@@ -21,14 +23,12 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    num_epochs = 2
-    batch_size = 256
     train_loader, test_loader = load_mnist(batch_size)
 
     print("Entrenando con Gradient Averaging...")
 
     history = []
-    for epoch in range(num_epochs):
+    for epoch in range(epochs):
         loss, acc, gnorm, elapsed, throughput = train_grad_average(
             model, train_loader, optimizer, criterion, device
         )
@@ -52,4 +52,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--conv", action="store_true", help="Use convolutional model")
+    parser.add_argument("--epochs", type=int, default=2, help="Number of epochs")
+    parser.add_argument("--batch-size", type=int, default=256, help="Batch size")
+    args = parser.parse_args()
+
+    train(conv=args.conv, epochs=args.epochs, batch_size=args.batch_size)

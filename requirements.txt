@@ -71,6 +71,8 @@ torch==2.11.0
     #   cliente-servidor-pytorch (pyproject.toml)
     #   torchmetrics
     #   torchvision
+torchinfo==1.8.0
+    # via cliente-servidor-pytorch (pyproject.toml)
 torchmetrics==1.9.0
     # via cliente-servidor-pytorch (pyproject.toml)
 torchvision==0.26.0

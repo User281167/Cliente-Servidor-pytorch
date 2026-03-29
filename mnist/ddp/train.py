@@ -4,13 +4,14 @@ import os
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torchinfo import summary
 
 from evaluates import evaluate_classification
+from mnist.model import MnistModel
 from trainers import train_ddp_grad_avarage
 from utils import plot_confusion_matrix, plot_grid
 
 from .load_sampler import load_mnist_sampler, load_mnist_test_sampler
-from .model import MnistModel
 
 
 def setup(rank: int, world_size: int, master_addr: str, master_port: str):
@@ -38,6 +39,7 @@ def train(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = MnistModel(conv)
+    summary(model, input_size=(batch_size, 1, 28, 28))
     model = DDP(model)
 
     criterion = torch.nn.CrossEntropyLoss()
