@@ -27,3 +27,9 @@ pip install -r requirements.txt
 uv run python -m mnist.local.main
 python -m mnist.local.main
 ```
+
+### Mnist Distributed Data Parallel (DDP)
+```bash
+python -m mnist.ddp.train --rank 0 --world-size 2 --master-addr 127.0.0.1
+python -m mnist.ddp.train --rank 1 --world-size 2 --master-addr 127.0.0.1
+```
