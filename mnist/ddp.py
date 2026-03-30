@@ -7,11 +7,11 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torchinfo import summary
 
 from evaluates import evaluate_classification
-from mnist.model import MnistModel
 from trainers import train_ddp_grad_avarage
-from utils import plot_confusion_matrix, plot_grid
+from utils import format_elapse, plot_confusion_matrix, plot_grid, time_wrapper
 
-from .load_sampler import load_mnist_sampler, load_mnist_test_sampler
+from .load_data import get_distributed_mnist_dataloader, get_mnist_dataloader
+from .model import MnistModel
 
 
 def setup(rank: int, world_size: int, master_addr: str, master_port: str):
@@ -24,6 +24,7 @@ def setup(rank: int, world_size: int, master_addr: str, master_port: str):
     )
 
 
+@time_wrapper
 def train(
     rank: int = 0,
     world_size: int = 1,
@@ -32,7 +33,6 @@ def train(
     conv: bool = False,
     lr: float = 0.01,
     batch_size: int = 256,
-    num_workers: int = 0,
     epochs: int = 20,
 ):
     setup(rank, world_size, master_addr, master_port)
@@ -44,7 +44,7 @@ def train(
 
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-    dataloader = load_mnist_sampler(batch_size, num_workers)
+    dataloader = get_distributed_mnist_dataloader(batch_size=batch_size)
 
     history = []
 
@@ -63,19 +63,20 @@ def train(
         throughput = (len(dataloader.dataset) / world_size) / elapsed
 
         if rank == 0:
-            print(
-                f"Epoch {epoch + 1:02d}/{epochs} | "
-                f"Loss: {avg_loss:.4f} | "
-                f"Acc: {avg_acc * 100:.2f}% | "
-                f"Time: {elapsed:.2f}s | "
-                f"Throughput: {throughput:.0f} samples/s"
-            )
+            if epoch % (epochs // 10 or 1) == 0 or epoch == epochs - 1 or epoch == 0:
+                print(
+                    f"Epoch {epoch + 1:02d}/{epochs} | Loss: {avg_loss:.4f} | Acc: {avg_acc * 100:.2f}% | "
+                    f"GNorm: {gnorm:.4f} | Throughput: {throughput:.0f} samples/s | Time: {format_elapse(elapsed)}"
+                )
+
             history.append((avg_loss, avg_acc, gnorm, elapsed, throughput))
         else:
-            print(f"Epoch {epoch + 1:02d}/{epochs} | Time: {elapsed:.2f}s")
+            print(f"Epoch {epoch + 1:02d}/{epochs} | Time: {format_elapse(elapsed)}")
+
+    dist.destroy_process_group()
 
     if rank == 0:
-        testloader = load_mnist_test_sampler(num_workers)
+        testloader = get_mnist_dataloader(train=False)
 
         test_acc, conf_matrix = evaluate_classification(model, testloader, 10, device)
         print(f"Test Accuracy: {test_acc * 100:.2f}%")
@@ -86,8 +87,6 @@ def train(
             2,
         )
         plot_confusion_matrix(conf_matrix)
-
-    dist.destroy_process_group()
 
 
 if __name__ == "__main__":
@@ -103,12 +102,6 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=0.01)
-    parser.add_argument(
-        "--num-workers",
-        type=int,
-        default=0,
-        help="número de procesos de carga de datos",
-    )
     parser.add_argument("--conv", action="store_true", help="usar modelo convolucional")
 
     args = parser.parse_args()
@@ -121,6 +114,5 @@ if __name__ == "__main__":
         args.conv,
         args.lr,
         args.batch_size,
-        args.num_workers,
         args.epochs,
     )

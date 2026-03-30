@@ -6,16 +6,18 @@ import torch.optim as optim
 from torchinfo import summary
 
 from cifar10.model import Cifar10Model
-from evaluates import evaluate_classification
+from evaluates import evaluate_classification, evaluate_classification_metrics
 from trainers import train_grad_average
+from utils.format_elapse import format_elapse, time_wrapper
 from utils.plots import plot_confusion_matrix, plot_grid
 
-from .load_data import load_cifar10
+from .load_data import get_cifar10_dataloader
 
 
+@time_wrapper
 def train(gray=True, conv=False, epochs=20, batch_size=256):
     model = Cifar10Model(gray=gray, conv=conv)
-    summary(model, input_size=(1, 1 if gray else 3, 32, 32))
+    summary(model, input_size=(batch_size, 1 if gray else 3, 32, 32))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
@@ -23,7 +25,8 @@ def train(gray=True, conv=False, epochs=20, batch_size=256):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    train_loader, test_loader = load_cifar10(batch_size, gray=gray)
+    train_loader = get_cifar10_dataloader(train=True, gray=gray, batch_size=batch_size)
+    test_loader = get_cifar10_dataloader(train=False, gray=gray, batch_size=batch_size)
 
     print("Entrenando con Gradient Averaging...")
 
@@ -33,17 +36,33 @@ def train(gray=True, conv=False, epochs=20, batch_size=256):
             model, train_loader, optimizer, criterion, device
         )
 
-        print(
-            f"Epoch {epoch + 1:02d}/{epochs:} | Loss: {loss:.4f} | Acc: {acc * 100:.2f}% | "
-            f"GNorm: {gnorm:.4f} | Time: {elapsed:.2f}s | Throughput: {throughput:.0f} samples/s"
+        loss_test, acc_test = evaluate_classification_metrics(
+            model, test_loader, device=device
         )
 
-        history.append((loss, acc, gnorm, elapsed, throughput))
+        if epoch % (epochs // 10 or 1) == 0 or epoch == epochs - 1 or epoch == 0:
+            print(
+                f"Epoch {epoch + 1:02d}/{epochs} | Loss: {loss:.4f} | Acc: {acc * 100:.2f}% | "
+                f"Test Loss: {loss_test:.4f} | Test Acc: {acc_test * 100:.2f}% | "
+                f"GNorm: {gnorm:.4f} | Throughput: {throughput:.0f} samples/s | Time: {format_elapse(elapsed)} | "
+            )
+
+        history.append(((loss, loss_test), (acc, acc_test), gnorm, elapsed, throughput))
 
     test_acc, conf_matrix = evaluate_classification(model, test_loader, device=device)
     print(f"Test Accuracy: {test_acc * 100:.2f}%")
 
-    plot_grid(history, ["Loss", "Accuracy", "Gradient Norm", "Time", "Throughput"], 3)
+    plot_grid(
+        history,
+        [
+            "Loss - Train/Test",
+            "Accuracy - Train/Test",
+            "Gradient Norm",
+            "Time",
+            "Throughput",
+        ],
+        3,
+    )
     plot_confusion_matrix(conf_matrix)
 
 
