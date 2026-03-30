@@ -24,26 +24,31 @@ pip install -r requirements.txt
 ### MNIST local
 
 ```bash
-python -m mnist.local.train
+python -m mnist.local
 ```
 
 ### Mnist Distributed Data Parallel (DDP)
 ```bash
-python -m mnist.ddp.train --rank 0 --world-size 2 --master-addr 127.0.0.1
-python -m mnist.ddp.train --rank 1 --world-size 2 --master-addr 127.0.0.1
+python -m mnist.ddp --rank 0 --world-size 2 --master-addr 127.0.0.1
+python -m mnist.ddp --rank 1 --world-size 2 --master-addr 127.0.0.1
 ```
 
-### Cifar10 local
+### CIFAR-10 local
 
 ```bash
-python -m mnist.local.train
+python -m cifar10.local
 ```
 
-### Cifar10 Distributed Data Parallel (DDP)
+### CIFAR-10 Distributed Data Parallel (DDP)
+
 ```bash
-python -m mnist.ddp.train --rank 0 --world-size 2 --master-addr 127.0.0.1
-python -m mnist.ddp.train --rank 1 --world-size 2 --master-addr 127.0.0.1
+# Terminal 1
+python -m cifar10.ddp --rank 0 --world-size 2 --master-addr 127.0.0.1
 
-# --conv -> Usar red convolucional
-# --rgb  -> Usar entrada RGB
+# Terminal 2
+python -m cifar10.ddp --rank 1 --world-size 2 --master-addr 127.0.0.1
 ```
+
+Flags disponibles:
+- `--conv`: Usar red convolucional
+- `--rgb`: Usar entrada RGB

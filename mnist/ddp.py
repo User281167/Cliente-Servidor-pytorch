@@ -40,7 +40,7 @@ def train(
 
     model = MnistModel(conv)
     summary(model, input_size=(batch_size, 1, 28, 28))
-    model = DDP(model)
+    model = DDP(model)  # modelo distribuido
 
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=lr)
@@ -73,6 +73,7 @@ def train(
         else:
             print(f"Epoch {epoch + 1:02d}/{epochs} | Time: {format_elapse(elapsed)}")
 
+    # indicar al master que este proceso ha terminado
     dist.destroy_process_group()
 
     if rank == 0:

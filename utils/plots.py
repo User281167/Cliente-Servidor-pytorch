@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_confusion_matrix(conf_matrix):
+def plot_confusion_matrix(conf_matrix, save_path: str | None = None):
     fig, ax = plt.subplots(figsize=(8, 7))
     im = ax.imshow(conf_matrix, interpolation="nearest", cmap="Blues")
     fig.colorbar(im, ax=ax)
@@ -35,13 +35,18 @@ def plot_confusion_matrix(conf_matrix):
             )
 
     fig.tight_layout()
-    plt.show()
+
+    if save_path:
+        plt.savefig(f"{save_path}/confusion_matrix.png")
+    else:
+        plt.show()
 
 
 def plot_grid(
     history: List[Union[List[float], tuple]],
-    labels: List[str],
+    labels: List[str | List[str] | tuple],  # titulo o (titulo, label1, label2, ...)
     n_cols: int | None = None,
+    save_path: str | None = None,
 ):
     if not history:
         return
@@ -63,15 +68,27 @@ def plot_grid(
 
     for idx, (col_values, label) in enumerate(zip(columns, labels)):
         ax = axs[idx]
+        title = label if isinstance(label, str) else label[0]
+
         ax.plot(range(1, n_epochs + 1), col_values)
-        ax.set_title(label)
+        ax.set_title(title)
         ax.set_xlabel("Epoch")
-        ax.set_ylabel(label)
+        ax.set_ylabel(title)
         ax.grid(True)
+
+        if isinstance(label, tuple):
+            try:
+                ax.legend([label[1], label[2]])
+            except IndexError:
+                pass
 
     # Ocultar subplots sobrantes si el grid tiene más celdas que métricas
     for idx in range(n_metrics, len(axs)):
         axs[idx].set_visible(False)
 
     plt.tight_layout()
-    plt.show()
+
+    if save_path:
+        plt.savefig(f"{save_path}/grid.png")
+    else:
+        plt.show()

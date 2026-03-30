@@ -27,6 +27,8 @@ def train_grad_average(model, train_loader, optimizer, criterion, device):
 
         outputs = model(images)
         loss = criterion(outputs, labels)
+
+        # promedio de gradientes
         (loss / n_batches).backward()
 
         total_loss += loss.item()

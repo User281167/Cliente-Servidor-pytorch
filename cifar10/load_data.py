@@ -49,7 +49,7 @@ def get_cifar10_dataloader(train=True, gray=False, batch_size=5000, normalize=Tr
 
 
 def get_distributed_cifar10_dataloader(
-    train=True, gray=False, batch_size=5000, normalize=True
+    train=True, gray=True, batch_size=5000, normalize=True
 ):
     tensor_dataset = preload_cifar10_to_ram(
         train=train, gray=gray, batch_size=batch_size, normalize=normalize
@@ -61,7 +61,7 @@ def get_distributed_cifar10_dataloader(
     )
 
 
-def plot_images(gray=False, size=10):
+def plot_images(gray=True, size=10):
     dataloader = get_cifar10_dataloader(
         gray=gray, train=True, batch_size=size, normalize=False
     )

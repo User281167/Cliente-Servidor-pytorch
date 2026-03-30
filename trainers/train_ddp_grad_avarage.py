@@ -21,7 +21,7 @@ def train_ddp_grad_avarage(model, dataloader, optimizer, criterion, rank, world_
         outputs = model(images)
         loss = criterion(outputs, labels)
 
-        # igual que tu grad average local — un solo step por epoch
+        # promedio de gradientes
         (loss / n_batches).backward()
 
         total_loss += loss.item()
