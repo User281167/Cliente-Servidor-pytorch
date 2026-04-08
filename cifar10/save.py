@@ -10,31 +10,30 @@ def save_history(
     test: bool,
 ) -> None:
     """Guardar el historial de entrenamiento en archivos Excel (por rango de métricas + describe)."""
-    if rank == 0:
-        if test:
-            rows = [
-                [loss_train, loss_test, acc_train, acc_test, gnorm, elapsed, throughput]
-                for (loss_train, loss_test), (
-                    acc_train,
-                    acc_test,
-                ), gnorm, elapsed, throughput in history
-            ]
-
-            columns = [
-                "loss_train",
-                "loss_test",
-                "acc_train",
-                "acc_test",
-                "gnorm",
-                "elapsed",
-                "throughput",
-            ]
-        else:
-            rows = history
-            columns = ["loss", "acc", "gnorm", "elapsed", "throughput"]
+    if rank != 0:
+        # worker no Master
+        rows, columns = history, ["elapsed", "throughput"]
+    elif not test:
+        rows, columns = history, ["loss", "acc", "gnorm", "elapsed", "throughput"]
     else:
-        rows = history
-        columns = ["elapsed"]
+        # datos de entrenamiento y de pruebas
+        rows = [
+            [loss_train, loss_test, acc_train, acc_test, gnorm, elapsed, throughput]
+            for (loss_train, loss_test), (
+                acc_train,
+                acc_test,
+            ), gnorm, elapsed, throughput in history
+        ]
+
+        columns = [
+            "loss_train",
+            "loss_test",
+            "acc_train",
+            "acc_test",
+            "gnorm",
+            "elapsed",
+            "throughput",
+        ]
 
     df = pd.DataFrame(rows, columns=columns, dtype=float)
     df.to_excel(

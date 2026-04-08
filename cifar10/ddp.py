@@ -47,9 +47,6 @@ def train(
     test: bool = False,
     save_path: str | None = None,
 ) -> None:
-    if save_path:
-        os.makedirs(save_path, exist_ok=True)
-
     setup(rank, world_size, master_addr, master_port)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -81,54 +78,58 @@ def train(
             rank,
             world_size,
         )
+
+        # cantidad de datos procesados por segundo
         throughput = (len(dataloader.dataset) / world_size) / elapsed
 
-        loss_test = acc_test = None
-        if test and rank == 0:
-            loss_test, acc_test = evaluate_classification_metrics(
-                model,
-                testloader,
-                device=device,
+        # Test si es el rank 0 worker que coordina
+        loss_test, acc_test = (
+            evaluate_classification_metrics(model, testloader, device, criterion)
+            if test and rank == 0
+            else (0, 0)
+        )
+
+        if rank != 0:
+            print(f"Epoch {epoch + 1:02d}/{epochs} | Time: {format_elapse(elapsed)}")
+            history.append((elapsed, throughput))
+            continue
+
+        if epoch % (epochs // 10 or 1) == 0 or epoch == epochs - 1 or epoch == 0:
+            test_log = (
+                f"Test Loss: {loss_test:.4f} | Test Acc: {acc_test * 100:.2f}% | "
+                if test
+                else ""
             )
 
-        if rank == 0:
-            if epoch % (epochs // 10 or 1) == 0 or epoch == epochs - 1 or epoch == 0:
-                test_log = (
-                    f"Test Loss: {loss_test:.4f} | Test Acc: {acc_test * 100:.2f}% | "
-                    if test
-                    else ""
-                )
-                print(
-                    f"Epoch {epoch + 1:02d}/{epochs} | "
-                    f"Loss: {avg_loss:.4f} | Acc: {avg_acc * 100:.2f}% | "
-                    f"{test_log}"
-                    f"GNorm: {gnorm:.4f} | "
-                    f"Throughput: {throughput:.0f} samples/s | "
-                    f"Time: {format_elapse(elapsed)}"
-                )
+            print(
+                f"Epoch {epoch + 1:02d}/{epochs} | "
+                f"Loss: {avg_loss:.4f} | Acc: {(avg_acc or 0) * 100:.2f}% | "
+                f"{test_log}"
+                f"GNorm: {gnorm:.4f} | "
+                f"Throughput: {throughput:.0f} samples/s | "
+                f"Time: {format_elapse(elapsed)}"
+            )
 
-            if test:
-                history.append(
-                    (
-                        (avg_loss, loss_test),
-                        (avg_acc, acc_test),
-                        gnorm,
-                        elapsed,
-                        throughput,
-                    )
+        if test:
+            history.append(
+                (
+                    (avg_loss, loss_test),
+                    (avg_acc, acc_test),
+                    gnorm,
+                    elapsed,
+                    throughput,
                 )
-            else:
-                history.append((avg_loss, avg_acc, gnorm, elapsed, throughput))
+            )
         else:
-            print(f"Epoch {epoch + 1:02d}/{epochs} | Time: {format_elapse(elapsed)}")
-            history.append(elapsed)
+            history.append((avg_loss, avg_acc, gnorm, elapsed, throughput))
 
     # indicar al master que este proceso ha terminado
     dist.destroy_process_group()
 
-    if save_path is not None:
+    # Guardar metricas y mostrar resultados
+    if save_path:
+        os.makedirs(save_path, exist_ok=True)
         save_history(history, save_path, rank, test)
-
     if rank != 0:
         return
 

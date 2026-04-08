@@ -36,7 +36,7 @@ def train(conv=False, epochs=20, batch_size=256):
         )
 
         loss_test, acc_test = evaluate_classification_metrics(
-            model, test_loader, device=device
+            model, test_loader, device, criterion
         )
 
         if epoch % (epochs // 10 or 1) == 0 or epoch == epochs - 1 or epoch == 0:

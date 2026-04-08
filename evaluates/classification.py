@@ -3,16 +3,18 @@ import torch.nn as nn
 from torchmetrics.classification import MulticlassConfusionMatrix
 
 
-def evaluate_classification_metrics(model, test_loader, device):
+def evaluate_classification_metrics(model, test_loader, device, loss_criterion):
     model.eval()
     total_loss = 0
     correct = 0
+
+    loss_criterion = loss_criterion or nn.CrossEntropyLoss()
 
     with torch.no_grad():
         for images, labels in test_loader:
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)
-            loss = nn.CrossEntropyLoss()(outputs, labels)
+            loss = loss_criterion(outputs, labels)
             total_loss += loss.item()
             _, predicted = torch.max(outputs, 1)
             correct += (predicted == labels).sum().item()
