@@ -4,17 +4,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_confusion_matrix(conf_matrix, save_path: str | None = None):
+def plot_confusion_matrix(
+    conf_matrix, save_path: str | None = None, class_names: List[str] | None = None
+):
     fig, ax = plt.subplots(figsize=(8, 7))
     im = ax.imshow(conf_matrix, interpolation="nearest", cmap="Blues")
     fig.colorbar(im, ax=ax)
 
-    classes = list(range(conf_matrix.shape[0]))
+    num_classes = conf_matrix.shape[0]
+    label_position = list(range(num_classes))
+    labels = label_position if class_names is None else class_names
+
     ax.set(
-        xticks=classes,
-        yticks=classes,
-        xticklabels=classes,
-        yticklabels=classes,
+        xticks=label_position,
+        yticks=label_position,
+        xticklabels=labels,
+        yticklabels=labels,
         xlabel="Predicted label",
         ylabel="True label",
         title="MNIST Confusion Matrix",
@@ -35,6 +40,7 @@ def plot_confusion_matrix(conf_matrix, save_path: str | None = None):
             )
 
     fig.tight_layout()
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
     if save_path:
         plt.savefig(f"{save_path}/confusion_matrix.png")

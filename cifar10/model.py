@@ -7,16 +7,17 @@ class Cifar10Model(nn.Module):
 
         if conv:
             self.net = nn.Sequential(
-                nn.Conv2d(1 if gray else 3, 32, kernel_size=3, padding=1),
-                nn.ReLU(),
-                nn.MaxPool2d(2),
-                nn.Conv2d(32, 64, kernel_size=3, padding=1),
-                nn.ReLU(),
-                nn.MaxPool2d(2),
+                nn.Conv2d(1 if gray else 3, 32, 3, padding=1),
+                nn.LeakyReLU(),
+                nn.Dropout2d(p=0.2),
+                nn.MaxPool2d(2, 2),
+                nn.Conv2d(32, 64, 3, padding=1),
+                nn.LeakyReLU(),
+                nn.MaxPool2d(2, 2),
                 nn.Flatten(),
+                nn.Linear(64 * 8 * 8, 128),
                 nn.Dropout(p=0.2),
-                nn.Linear(64 * 8 * 8, 128),  # 64 filtros de 8x8
-                nn.ReLU(),
+                nn.LeakyReLU(),
                 nn.Linear(128, 10),
             )
         else:

@@ -12,6 +12,7 @@ from trainers import train_ddp_grad_avarage
 from utils import format_elapse, plot_confusion_matrix, plot_grid, time_wrapper
 
 from .load_data import (
+    cifar10_classes,
     get_cifar10_dataloader,
     get_distributed_cifar10_dataloader,
     plot_images,
@@ -20,6 +21,9 @@ from .save import save_history
 
 
 def setup(rank: int, world_size: int, master_addr: str, master_port: str) -> None:
+    # Indicar a pytorch sobre el worker con rank 0
+    # Indicar el id del rank local
+    # Indicar Uso de cpu o gpu
     os.environ["MASTER_ADDR"] = master_addr
     os.environ["MASTER_PORT"] = master_port
     dist.init_process_group(
@@ -37,7 +41,7 @@ def train(
     master_port: str = "9999",
     conv: bool = False,
     gray: bool = True,
-    lr: float = 0.01,
+    lr: float = 0.001,
     batch_size: int = 256,
     epochs: int = 20,
     test: bool = False,
@@ -56,7 +60,8 @@ def train(
     model = DDP(model)  # modelo datos distribuido
 
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
     dataloader = get_distributed_cifar10_dataloader(gray=gray, batch_size=batch_size)
     testloader = get_cifar10_dataloader(gray=gray, train=False, batch_size=batch_size)
 
@@ -142,7 +147,7 @@ def train(
         2,
         save_path=save_path,
     )
-    plot_confusion_matrix(conf_matrix, save_path=save_path)
+    plot_confusion_matrix(conf_matrix, save_path=save_path, class_names=cifar10_classes)
 
     if save_path:
         with open(os.path.join(save_path, "metrics.txt"), "w") as f:
@@ -166,7 +171,7 @@ if __name__ == "__main__":
     parser.add_argument("--master-port", type=str, default="9999")
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch-size", type=int, default=256)
-    parser.add_argument("--lr", type=float, default=0.01)
+    parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--conv", action="store_true", help="usar modelo convolucional")
     parser.add_argument("--rgb", action="store_true", help="usar imágenes en RGB")
     parser.add_argument(

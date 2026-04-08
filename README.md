@@ -43,10 +43,10 @@ python -m cifar10.local
 
 ```bash
 # Terminal 1
-python -m cifar10.ddp --rank 0 --world-size 2 --master-addr 127.0.0.1
+python -m cifar10.ddp --rank 0 --world-size 2 --master-addr 127.0.0.1 --batch-size 1000 --epochs 100  --save-path ./cifar10_metrics --test
 
 # Terminal 2
-python -m cifar10.ddp --rank 1 --world-size 2 --master-addr 127.0.0.1
+-m cifar10.ddp --rank 1 --world-size 2 --master-addr 127.0.0.1 --batch-size 1000 --epochs 100  --save-path ./cifar10_metrics
 ```
 
 Flags disponibles:

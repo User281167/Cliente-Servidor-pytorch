@@ -11,11 +11,11 @@ from trainers import train_grad_average
 from utils.format_elapse import format_elapse, time_wrapper
 from utils.plots import plot_confusion_matrix, plot_grid
 
-from .load_data import get_cifar10_dataloader
+from .load_data import cifar10_classes, get_cifar10_dataloader, plot_images
 
 
 @time_wrapper
-def train(gray=True, conv=False, epochs=20, batch_size=256):
+def train(gray=True, conv=False, epochs=20, batch_size=256, lr=0.001):
     model = Cifar10Model(gray=gray, conv=conv)
     summary(model, input_size=(batch_size, 1 if gray else 3, 32, 32))
 
@@ -23,12 +23,11 @@ def train(gray=True, conv=False, epochs=20, batch_size=256):
     model.to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
 
     train_loader = get_cifar10_dataloader(train=True, gray=gray, batch_size=batch_size)
     test_loader = get_cifar10_dataloader(train=False, gray=gray, batch_size=batch_size)
-
-    print("Entrenando con Gradient Averaging...")
+    plot_images(gray=gray)
 
     history = []
     for epoch in range(epochs):
@@ -63,7 +62,7 @@ def train(gray=True, conv=False, epochs=20, batch_size=256):
         ],
         3,
     )
-    plot_confusion_matrix(conf_matrix)
+    plot_confusion_matrix(conf_matrix, class_names=cifar10_classes)
 
 
 if __name__ == "__main__":
@@ -74,6 +73,7 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, help="Number of epochs", default=20)
     parser.add_argument("--batch-size", type=int, help="Batch size", default=256)
     parser.add_argument("--conv", action="store_true", help="Use convolutional model")
+    parser.add_argument("--lr", type=float, help="Learning rate", default=0.001)
     args = parser.parse_args()
 
     train(
@@ -81,4 +81,5 @@ if __name__ == "__main__":
         conv=args.conv,
         epochs=args.epochs,
         batch_size=args.batch_size,
+        lr=args.lr,
     )
